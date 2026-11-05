@@ -6,10 +6,12 @@
 The loop talks to one normalized interface (:class:`Provider`, returning an
 :class:`AssistantTurn`), and ``provider_for(profile)`` builds the right one for a
 :class:`ModelProfile`. Each provider uses its backbone's most native path:
-``chat`` (OpenAI-compatible Chat Completions: vLLM/Qwen + the page-reader),
-``openai-responses`` (the OpenAI Responses API: reasoning summaries + stateless
-threading), ``gemini`` (the native google-genai SDK: structured thoughts +
-thought_signature). All surface reasoning/content deltas through the same seam.
+``chat`` (OpenAI-compatible Chat Completions: vLLM, Ollama, LM Studio, llama.cpp, the
+hosted OpenAI-compatible APIs, and the page-reader), ``openai-responses`` (the OpenAI Responses
+API: reasoning summaries + stateless threading), ``openai-codex`` (the same over a ChatGPT
+subscription's Codex backend), ``gemini`` (the native google-genai SDK: structured thoughts +
+thought_signature), ``anthropic`` (the Messages API). All surface reasoning/content deltas
+through the same seam.
 
 The lower-level ``complete()`` / ``stream()`` functions provide Chat Completions for
 the page reader and summaries.
@@ -41,6 +43,7 @@ PROTOCOLS: dict[str, str] = {
     "openai-responses": "trading_r1.providers.openai:OpenAIProvider",
     "gemini": "trading_r1.providers.gemini:GeminiProvider",
     "anthropic": "trading_r1.providers.anthropic:AnthropicProvider",
+    "openai-codex": "trading_r1.providers.chatgpt:ChatGPTProvider",
 }
 
 

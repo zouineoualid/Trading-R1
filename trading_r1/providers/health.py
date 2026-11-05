@@ -16,7 +16,7 @@ from urllib.parse import urlparse
 import httpx
 
 from trading_r1.providers import provider_for
-from trading_r1.providers.profiles import ModelProfile
+from trading_r1.providers.profiles import AUTO_MODEL, ModelProfile
 from trading_r1.state.runtime_config import runtime_config
 
 
@@ -46,6 +46,8 @@ def model_served(payload: Any, want: str) -> bool:
         ids = [str(m.get("id", "")) for m in (payload.get("data") or [])]
     except Exception:  # noqa: BLE001 (unexpected shape: the model is not confirmed, so not served)
         return False
+    if want == AUTO_MODEL:  # whatever the server has loaded (providers/discovery.py picks it)
+        return bool(ids)
     return any(mid == want or mid.rsplit("/", 1)[-1] == want for mid in ids)
 
 
@@ -61,7 +63,10 @@ async def endpoint_status(
     of what's loaded (it catches the real local failure: server up, model not pulled or served
     under another name). A cloud ``/models`` is a broad catalog, not our allowlist, so it isn't
     gated on: a wrong model surfaces at call time instead of falsely reading offline."""
-    url, headers = provider_for(profile).models_request()
+    provider = provider_for(profile)
+    if (fixed := provider.offline_status()) is not None:  # no inventory to ask (ChatGPT)
+        return fixed, []  # type: ignore[return-value]
+    url, headers = provider.models_request()
     try:
         r = await client.get(url, headers=headers)
     except Exception:  # noqa: BLE001 (unreachable endpoint: not ready)
@@ -122,6 +127,10 @@ async def ensure_local_ready(backbone: ModelProfile, reader: ModelProfile) -> No
             problems.append(f"{where} refused its key")
         elif status == "model_missing":
             served = ", ".join(ids) or "nothing"
-            problems.append(f"{where} answers but doesn't serve {p.model!r} (it serves: {served})")
+            var = f"TR1_{p.name.upper().replace('-', '_')}_MODEL"
+            fix = f"; set {var} to one of them" if ids else ""
+            problems.append(
+                f"{where} answers but doesn't serve {p.model!r} (it serves: {served}){fix}"
+            )
     if problems:
         raise ModelServerUnreachableError("local provider not ready: " + "; ".join(problems))

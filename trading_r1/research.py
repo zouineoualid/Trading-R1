@@ -16,7 +16,7 @@ from typing import Any
 
 from trading_r1.assembly import build_tool_registry, default_skill_registry, run_binder
 from trading_r1.providers import ModelProfile, get_profile
-from trading_r1.providers.discovery import with_context_window
+from trading_r1.providers.discovery import resolve_model, with_context_window
 from trading_r1.providers.health import ensure_local_ready
 from trading_r1.runtime.agent import Agent
 from trading_r1.runtime.evidence import EvidenceStore
@@ -74,6 +74,7 @@ async def run_research(
         await ensure_local_ready(profile, reader_profile)
     config = config or load_runtime_config()
     profile = await with_context_window(profile)  # ask the server for its window, if it says
+    reader_profile = await resolve_model(reader_profile)  # a reader on `auto` takes what is loaded
     cache = FetchCache()
     cache.seed([Citation(**source) for source in sources or []])  # a conversation's numbers last
     skills = default_skill_registry()

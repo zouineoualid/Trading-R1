@@ -8,6 +8,7 @@ trading-r1 "NVDA DCF value?"     # the TUI, seeded with a first question
 trading-r1 --profile vllm        # the TUI on a given backbone (/model switches later)
 trading-r1 serve                 # the HTTP+SSE backend alone (development)
 trading-r1 export SESSION        # write a session's report to a file
+trading-r1 models                # every model provider: set up, answering, or what to do
 trading-r1 jobs | channels | secrets | daemon | sync | sessions   # subcommands, in cli/*.py
 
 ``main`` is the console-script entry point. Exit status is 0 on success and non-zero when a
@@ -36,6 +37,7 @@ _SUBCOMMANDS = {
     "daemon": "trading_r1.cli.daemon",
     "sync": "trading_r1.cli.sync",
     "sessions": "trading_r1.cli.sessions",
+    "models": "trading_r1.cli.models",
 }
 
 _FILES = """\
@@ -55,9 +57,11 @@ environment:
   TR1_<NAME>_BASE_URL, TR1_<NAME>_MODEL for a model, for example TR1_VLLM_BASE_URL
   TR1_VLLM_READER_BASE_URL, the page reader, if on another server
 
-Without --profile or a saved choice, the model is the first set up: an OpenAI, Anthropic, Gemini or
-Tauric key, then a vLLM server (TR1_VLLM_BASE_URL) or an Ollama (TR1_OLLAMA_MODEL or
-TR1_OLLAMA_BASE_URL)."""
+Without --profile or a saved choice, the model is the first set up: an OpenAI key, a ChatGPT
+sign-in (codex login), an Anthropic, Gemini or Tauric key, another hosted API's key (Ollama Cloud,
+OpenRouter, Mistral, DeepSeek, xAI, Groq, Together, Cerebras), then a server you run: vLLM
+(TR1_VLLM_BASE_URL), Ollama (TR1_OLLAMA_MODEL or TR1_OLLAMA_BASE_URL), LM Studio
+(TR1_LMSTUDIO_BASE_URL) or llama.cpp (TR1_LLAMACPP_BASE_URL). `trading-r1 models` lists them."""
 
 
 def main() -> None:
@@ -84,8 +88,9 @@ def main() -> None:
     ap.add_argument(
         "--profile",
         default=None,
-        help="the model to start on (tauric, gpt, anthropic, gemini, vllm, ollama); "
-        "default: the saved Model… choice, else the first with its key set.",
+        help="the model to start on (tauric, gpt, chatgpt, anthropic, gemini, ollama, lmstudio, "
+        "llamacpp, vllm, ...; `trading-r1 models` lists them); default: the saved Model… "
+        "choice, else the first set up.",
     )
     args = ap.parse_args()
     try:

@@ -15,7 +15,7 @@ lint:  ## ruff and Biome
 
 smoke:  ## the command runs, the backend answers, the terminal UI typechecks
 	uv run trading-r1 --version
-	for c in serve export sessions channels jobs secrets daemon sync; do \
+	for c in serve export sessions channels jobs secrets daemon sync models; do \
 	  uv run trading-r1 $$c --help > /dev/null || exit 1; done
 	home=$$(mktemp -d); port=$$(uv run python -c "import socket; s = socket.socket(); s.bind(('127.0.0.1', 0)); print(s.getsockname()[1])"); \
 	TR1_HOME=$$home TR1_PORT=$$port uv run trading-r1 serve & pid=$$!; \

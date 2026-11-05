@@ -4,7 +4,10 @@
 """Model profiles: the config that selects *which* backbone a call uses.
 
 A profile names a model, an OpenAI-compatible endpoint, the credential to use,
-generation defaults, and an optional quirk adapter. Profiles come from built-in
+generation defaults, and an optional quirk adapter. A credential is an API key in the
+environment or the key store, or, for a subscription, the token its client's login keeps on
+this machine (``logins.py``). A model of ``auto`` is whatever the server has loaded
+(``discovery.py``). Profiles come from built-in
 defaults, then an optional JSON file merged per profile (this machine's
 ``~/.trading-r1/providers.json``, ``$TR1_PROVIDERS_CONFIG``), then
 ``TR1_<NAME>_BASE_URL`` / ``_MODEL`` / ``_API_KEY`` env.
@@ -30,7 +33,8 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from trading_r1.providers.builtins import builtin_profiles, supplied_provider
+from trading_r1.providers.builtins import builtin_profiles, setup_hints, supplied_provider
+from trading_r1.providers.logins import login_token
 from trading_r1.state import credentials
 from trading_r1.state.paths import state_dir
 from trading_r1.state.settings import persisted_backbone
@@ -69,7 +73,7 @@ class ModelProfile(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     name: str
-    model: str
+    model: str  # the served model's id; ``auto``: the one the server lists first
     base_url: str | None = None
     api_key_env: str | None = None  # the variable that holds its key; None: it takes none
     api_key_literal: str | None = None  # e.g. "EMPTY" for an open vLLM
@@ -87,8 +91,9 @@ class ModelProfile(BaseModel):
     # The wire protocol the loop uses (providers/base.Provider): "chat" =
     # OpenAI-compatible Chat Completions (vLLM/Qwen, Gemini-compat); "openai-responses"
     # = the OpenAI Responses API (native reasoning summaries + stateless threading);
-    # "gemini" = the native google-genai SDK. Selects the provider via provider_for().
-    provider: Literal["chat", "openai-responses", "gemini", "anthropic"] = "chat"
+    # "gemini" = the native google-genai SDK; "anthropic" = the Messages API; "openai-codex" =
+    # the Responses API over a ChatGPT subscription. Selects the provider via provider_for().
+    provider: Literal["chat", "openai-responses", "gemini", "anthropic", "openai-codex"] = "chat"
     # Role in the harness: a "backbone" drives the ReAct loop (and is switchable via
     # /model); a "reader" is the page-reading model and is never a loop backbone.
     role: Literal["backbone", "reader"] = "backbone"
@@ -105,16 +110,20 @@ class ModelProfile(BaseModel):
         return min(max_tokens, self.output_limit) if self.output_limit else max_tokens
 
     def resolve_api_key(self, env: Mapping[str, str] | None = None) -> str:
-        """Resolve the credential: explicit literal wins, else the env var,
-        else "" (the client falls back to a placeholder for keyless vLLM)."""
+        """Resolve the credential: explicit literal wins, else the env var, else the token of a
+        login the variable stands for (a subscription), else "" (the client falls back to a
+        placeholder for keyless vLLM)."""
         if self.api_key_literal is not None:
             return self.api_key_literal
         if self.api_key_env is None:
             return ""
-        return (env if env is not None else credentials.overlay()).get(self.api_key_env, "")
+        value = (env if env is not None else credentials.overlay()).get(self.api_key_env, "")
+        return value or login_token(self.api_key_env)
 
 
+AUTO_MODEL = "auto"
 _BUILTIN_PROFILES = builtin_profiles()
+_SETUP_HINTS = setup_hints()
 LOCAL_READERS = {"vllm-reader": "VLLM", "ollama-reader": "OLLAMA"}
 
 
@@ -214,8 +223,10 @@ def load_profiles(
 
 
 NO_MODEL = (
-    "No model provider set up. Get a Tauric key at https://tauric.ai/signup, or set "
-    "OPENAI_API_KEY, ANTHROPIC_API_KEY, GEMINI_API_KEY or TR1_VLLM_BASE_URL."
+    "No model provider set up. Get a Tauric key at https://tauric.ai/signup; set OPENAI_API_KEY, "
+    "ANTHROPIC_API_KEY, GEMINI_API_KEY or another provider's key; sign in to ChatGPT with "
+    "`codex login`; or run a local model (TR1_OLLAMA_MODEL, TR1_LMSTUDIO_BASE_URL, "
+    "TR1_LLAMACPP_BASE_URL, TR1_VLLM_BASE_URL). `trading-r1 models` lists them all."
 )
 
 
@@ -316,6 +327,8 @@ def available_backbones(
                 # the exact env var to set when a *cloud* backbone lacks its key; None for a
                 # keyless local backbone (nothing to configure; it just needs to be running).
                 "api_key_env": None if keyless else p.api_key_env,
+                # how to supply it when that is a sign-in rather than a key to enter; else None
+                "setup": _SETUP_HINTS.get(p.name),
             }
         )
     rows.sort(key=lambda m: (m["order"], m["name"]))  # stable; never reshuffles on readiness

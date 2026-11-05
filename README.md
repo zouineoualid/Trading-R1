@@ -64,13 +64,38 @@ To uninstall, run `trading-r1 daemon uninstall` if you installed the service, th
 |---|---|---|
 | `tauric` | `tauric` | `TAURIC_API_KEY` |
 | `gpt` | `gpt-6.1-sol` | `OPENAI_API_KEY` |
+| `chatgpt` | `gpt-6.1-sol` | a ChatGPT plan, signed in with `codex login` |
 | `anthropic` | `claude-sonnet-5-5` | `ANTHROPIC_API_KEY` |
 | `gemini` | `gemini-3.8-flash` | `GEMINI_API_KEY` |
+| `ollama-cloud` | `gpt-oss:120b` | `OLLAMA_API_KEY` |
+| `openrouter` | `openai/gpt-oss-120b` | `OPENROUTER_API_KEY` |
+| `mistral` | `mistral-large-latest` | `MISTRAL_API_KEY` |
+| `deepseek` | `deepseek-chat` | `DEEPSEEK_API_KEY` |
+| `xai` | `grok-4-1-fast-reasoning` | `XAI_API_KEY` |
+| `groq` | `openai/gpt-oss-120b` | `GROQ_API_KEY` |
+| `together` | `openai/gpt-oss-120b` | `TOGETHER_API_KEY` |
+| `cerebras` | `gpt-oss-120b` | `CEREBRAS_API_KEY` |
 | `vllm` | `Qwen3.8-27B` | a vLLM server you run |
+| `ollama` | `gemma4:e4b` | Ollama on this machine, with the model pulled |
+| `lmstudio` | the model loaded | LM Studio's local server on |
+| `llamacpp` | the model loaded | a `llama-server` you run |
 
-The app starts on the first you have set up, in the order OpenAI, Anthropic, Gemini, Tauric, vLLM.
-Change it with *Model…* in the palette, or start on one with `trading-r1 --profile gpt`. To point
-`vllm` at your server, see [Configuration](MANUAL.md#configuration).
+The app starts on the first you have set up: an OpenAI key, a ChatGPT sign-in, then Anthropic,
+Gemini, Tauric and the other hosted APIs, then a server you run. Change it with *Model…* in the
+palette, or start on one with `trading-r1 --profile gpt`. `trading-r1 models` lists every provider,
+whether it is set up and answering, and what to do if not.
+
+**Subscriptions.** A ChatGPT plan (Plus, Pro, Team or Enterprise) works without an API key: install
+the [Codex CLI](https://github.com/openai/codex), run `codex login` once, and `chatgpt` is ready.
+Trading-R1 uses that login and keeps it fresh. A Claude subscription cannot be used here: Anthropic's
+terms keep it to Claude Code and the Claude apps, so `anthropic` takes an API key. Google's AI plans
+have no API either; `gemini` takes a Gemini API key, which has a free tier.
+
+**Local models.** Ollama, LM Studio and llama.cpp are found on their default ports as soon as they
+run; `lmstudio` and `llamacpp` use whatever model is loaded. Name a model or an address with
+`TR1_OLLAMA_MODEL=qwen3:8b`, `TR1_LMSTUDIO_MODEL=...`, `TR1_LLAMACPP_BASE_URL=http://box:8080/v1`
+(`TR1_OLLAMA_MODEL=auto` takes the first model pulled). Any other OpenAI-compatible server gets a
+profile in `providers.json`; see [Configuration](MANUAL.md#configuration).
 
 ## Use it
 

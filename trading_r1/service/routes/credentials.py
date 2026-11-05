@@ -2,7 +2,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """Credential routes: the model keys the application looks for and whether each is set
-(``GET /credentials``), and write-only storage of a key, password or token
+(``GET /credentials``; a subscription's token counts as set, from a ``login``, when its client is
+signed in), and write-only storage of a key, password or token
 (``PUT``/``DELETE /credentials/{name}``). A value is never returned; a name that a channel holds
 as its secret is changed by editing the channel.
 """
@@ -22,10 +23,14 @@ router = APIRouter()
 async def list_credentials() -> dict[str, Any]:
     """The model keys the application looks for and whether each is set (never a value)."""
     from trading_r1.providers.builtins import model_keys
+    from trading_r1.providers.logins import login_token
     from trading_r1.state import credentials
 
     keys = model_keys()
     state = credentials.status(list(keys))
+    for name, row in state.items():
+        if not row["configured"] and login_token(name):
+            row.update(configured=True, source="login")
     return {
         "credentials": [{"name": n, "label": keys[n], **state[n]} for n in keys],
         "problem": credentials.problem(),

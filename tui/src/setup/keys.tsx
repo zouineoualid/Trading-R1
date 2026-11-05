@@ -14,7 +14,9 @@ export function createKeys({ host, dialog, load, once, choose, say }: Flow) {
       ? "not set"
       : c.source === "env"
         ? "set in the environment" + (c.shadows_store ? " (overrides the stored one)" : "")
-        : "stored"
+        : c.source === "login"
+          ? "signed in (the Codex CLI's login)"
+          : "stored"
 
   function apiKeys() {
     return load("API keys", listCredentials(), showKeys)

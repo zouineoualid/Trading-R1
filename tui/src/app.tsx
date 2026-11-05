@@ -357,14 +357,17 @@ function AppInner() {
         }}
         onSelectDisabled={(name) => {
           const m = data.models.find((x) => x.name === name)
-          if (m?.api_key_env && (!m.configured || m.reason === "key_refused")) return askKey(m, title)
+          const unset = !!m && (!m.configured || m.reason === "key_refused")
+          if (m?.api_key_env && !m.setup && unset) return askKey(m, title)
           if (m)
             info(
-              m.reason === "key_refused"
-                ? "API key refused"
-                : m.configured
-                  ? "Model offline"
-                  : "Model needs an API key",
+              m.setup && unset
+                ? "Model needs a sign-in"
+                : m.reason === "key_refused"
+                  ? "API key refused"
+                  : m.configured
+                    ? "Model offline"
+                    : "Model needs an API key",
               unavailableGuidance(m),
             )
         }}

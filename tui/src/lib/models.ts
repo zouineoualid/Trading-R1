@@ -9,7 +9,7 @@ import type { ModelInfo } from "./api"
  *  reason when it is not usable. A ready row is just the model name. */
 export function statusLine(m: ModelInfo): string {
   if (m.ready) return m.model
-  if (!m.configured) return `${m.model} (needs ${m.api_key_env})`
+  if (!m.configured) return m.setup ? `${m.model} (not signed in)` : `${m.model} (needs ${m.api_key_env})`
   if (m.reason === "key_refused") return `${m.model} (key refused)`
   if (m.reason === "offline:reader") return `${m.model} (reader offline)`
   return `${m.model} (offline)`
@@ -66,6 +66,10 @@ export function pickBackbone(
  *  only the user can read, or the environment variable works), or start the local
  *  server (vLLM/Ollama). */
 export function unavailableGuidance(m: ModelInfo): string[] {
+  if (m.setup && (!m.configured || m.reason === "key_refused")) {
+    const what = m.configured ? "is not signed in any more." : "needs a sign-in."
+    return [`${m.provider_label} (${m.model}) ${what}`, "", m.setup]
+  }
   if (!m.configured && m.api_key_env) {
     return [
       `${m.provider_label} (${m.model}) needs an API key.`,
@@ -86,9 +90,10 @@ export function unavailableGuidance(m: ModelInfo): string[] {
   // configured but not answering, generic by kind: a local
   // server that isn't running/loaded, or an unreachable remote endpoint.
   const what = m.reason === "offline:reader" ? "page reader" : "endpoint"
+  const loaded = m.model === "auto" ? "a model" : m.model
   const hint =
     m.kind === "local"
-      ? `Start the local ${m.provider_label} server and make sure ${m.model} is loaded, then retry.`
+      ? `Start the local ${m.provider_label} server and make sure ${loaded} is loaded, then retry.`
       : "Make sure the endpoint is reachable, then retry."
   return [`${m.provider_label} (${m.model}) is offline: its ${what} did not answer.`, "", hint]
 }

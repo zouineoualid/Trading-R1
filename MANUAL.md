@@ -91,12 +91,15 @@ and model profiles are in the same folder (`TR1_HOME` moves it).
 
 | Variable | Does |
 |---|---|
-| `TR1_PROFILE` | The model to start on |
+| `TR1_PROFILE` | The model to start on (`trading-r1 models` lists them) |
 | `TR1_REPORTS_DIR` | The reports folder |
 | `TR1_SKILLS_DIR` | One more folder of skills |
 | `TR1_PORT` | The backend's port |
 | `TR1_VLLM_BASE_URL` | Your vLLM server's address, such as `http://gpu-box:8000/v1` |
 | `TR1_<NAME>_BASE_URL`, `TR1_<NAME>_MODEL`, `TR1_<NAME>_API_KEY` | One model's address, model and key |
+| `CHATGPT_ACCESS_TOKEN`, `CHATGPT_ACCOUNT_ID` | A ChatGPT token, instead of the Codex CLI's login |
+| `CODEX_HOME` | Where the Codex CLI keeps its login (default `~/.codex`) |
+| `TR1_CHATGPT_ORIGINATOR` | The client name sent to the ChatGPT backend (default `codex_cli_rs`) |
 
 To add a model, give it a profile in `~/.trading-r1/providers.json`:
 
@@ -107,6 +110,58 @@ To add a model, give it a profile in `~/.trading-r1/providers.json`:
 
 Profiles with their own address send no key unless they name one (`"api_key_env": "MY_KEY"`). Those
 that extend a hosted profile keep its key, so name the key they should send.
+
+### Providers
+
+`trading-r1 models` lists every provider: whether it is set up (a key, a sign-in, or a server
+that answers), what it serves, and the fix when it is not ready. The hosted providers and the
+variable each one needs:
+
+| Provider | Key | Models (change with `TR1_<NAME>_MODEL`) |
+|---|---|---|
+| `tauric` | `TAURIC_API_KEY` | `tauric` |
+| `gpt` | `OPENAI_API_KEY` | `gpt-6.1-sol`, reader `gpt-6-luna` |
+| `chatgpt` | a ChatGPT plan: `codex login` | `gpt-6.1-sol` |
+| `anthropic` | `ANTHROPIC_API_KEY` | `claude-sonnet-5-5`, reader `claude-haiku-5-5` |
+| `gemini` | `GEMINI_API_KEY` | `gemini-3.8-flash` |
+| `ollama-cloud` | `OLLAMA_API_KEY` (ollama.com) | `gpt-oss:120b` |
+| `openrouter` | `OPENROUTER_API_KEY` | `openai/gpt-oss-120b`, reader `openai/gpt-oss-20b` |
+| `mistral` | `MISTRAL_API_KEY` | `mistral-large-latest`, reader `mistral-small-latest` |
+| `deepseek` | `DEEPSEEK_API_KEY` | `deepseek-chat` |
+| `xai` | `XAI_API_KEY` | `grok-4-1-fast-reasoning`, reader `grok-4-1-fast-non-reasoning` |
+| `groq` | `GROQ_API_KEY` | `openai/gpt-oss-120b`, reader `openai/gpt-oss-20b` |
+| `together` | `TOGETHER_API_KEY` | `openai/gpt-oss-120b` |
+| `cerebras` | `CEREBRAS_API_KEY` | `gpt-oss-120b` |
+
+The reader is the model that reads web pages; `TR1_<NAME>_READER_MODEL` changes it where a
+provider has one of its own (`gpt-reader`, `mistral-reader`, ...). A provider's model names are
+the provider's: check its model list when a call says the model is unknown.
+
+**ChatGPT.** A ChatGPT subscription has no API key. Install the Codex CLI
+(`npm install -g @openai/codex`), run `codex login`, and `chatgpt` is set up: Trading-R1 reads
+the login Codex keeps in `~/.codex/auth.json`, refreshes the token when it expires and writes the
+new one back, so Codex keeps working too. On a machine without a browser, copy that file over, or
+set `CHATGPT_ACCESS_TOKEN` (and `CHATGPT_ACCOUNT_ID`) by hand. The ChatGPT backend is not a
+documented API and serves the models the plan allows; usage counts against the plan's limits. A
+Codex that keeps its login in the system keyring rather than the file is not found: set
+`cli_auth_credentials_store = "file"` in `~/.codex/config.toml` and sign in again.
+
+**Claude and Gemini.** Anthropic's terms keep a Claude Pro or Max subscription to Claude Code
+and the Claude apps, so `anthropic` takes an API key from the Anthropic console. A Google AI plan
+has no API; `gemini` takes a Gemini API key, which has a free tier.
+
+**Local models.** `ollama`, `lmstudio` and `llamacpp` expect the app on its default port
+(`:11434`, `:1234`, `:8080`); `vllm` expects `:8000`. `lmstudio` and `llamacpp` use the model
+loaded in the app (`auto`: the first the server lists); `ollama` expects `gemma4:e4b` pulled, or
+the model in `TR1_OLLAMA_MODEL` (`auto` takes the first pulled). `TR1_<NAME>_BASE_URL` points one
+at another machine. A local model needs to call tools and answer in JSON; a small or old one may
+not manage the research loop. For any other OpenAI-compatible server (LocalAI, Jan, a cloud
+GPU), add a profile:
+
+```json
+{"profiles": {"jan": {"extends": "lmstudio", "base_url": "http://127.0.0.1:1337/v1",
+                      "reader_profile": "jan"}}}
+```
 
 ## Adding a skill
 

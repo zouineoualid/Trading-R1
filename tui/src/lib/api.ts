@@ -60,14 +60,15 @@ export interface StatusInfo {
 }
 
 export interface ModelInfo {
-  name: string // stable id (tauric/gpt/anthropic/gemini/vllm/ollama)
-  model: string // the served model, shown as the sub-line
-  provider_label: string // menu header: Tauric / OpenAI / Google / vLLM / Ollama
+  name: string // stable id (tauric/gpt/chatgpt/anthropic/gemini/vllm/ollama/lmstudio/...)
+  model: string // the served model, shown as the sub-line ("auto": whatever is loaded)
+  provider_label: string // menu header: Tauric / OpenAI / ChatGPT / Google / vLLM / Ollama
   kind: "cloud" | "local"
-  configured: boolean // credentials present (cloud key set, or keyless local)
+  configured: boolean // credentials present (cloud key set, signed in, or keyless local)
   ready: boolean // usable right now: backbone AND paired reader answer
   reason: string // "ok" | "needs_key:<ENV>" | "key_refused" | "offline:backbone" | "offline:reader"
   api_key_env: string | null // the env var to set for a cloud backbone; null for keyless local
+  setup?: string | null // how to supply it when that is a sign-in, not a key to enter
 }
 
 interface CompactResult {
@@ -528,7 +529,7 @@ export interface Credential {
   name: string
   label: string
   configured: boolean
-  source: "env" | "store" | null
+  source: "env" | "store" | "login" | null // login: the provider's own client is signed in
   shadows_store?: boolean
 }
 

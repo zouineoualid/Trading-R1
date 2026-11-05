@@ -146,6 +146,12 @@ class Provider(ABC):
         self.profile = profile
         self.client = client
 
+    def offline_status(self) -> str | None:
+        """Readiness decided without a probe, when the endpoint has no inventory to ask: ``"ok"``
+        or ``"key_refused"`` (``providers/health.Status``); None, the default, probes
+        :meth:`models_request`."""
+        return None
+
     def models_request(self) -> tuple[str, dict[str, str]]:
         """The URL and headers that list the models the endpoint serves (the readiness probe).
         The default speaks the OpenAI-compatible ``/models`` with a bearer key."""

@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+- A ChatGPT subscription as a model (`chatgpt`): sign in once with the Codex CLI (`codex login`)
+  and the app uses that login, refreshing it as needed. No API key.
+- More hosted providers, each on its API key: Ollama Cloud, OpenRouter, Mistral, DeepSeek, xAI,
+  Groq, Together and Cerebras.
+- More local runtimes: LM Studio and llama.cpp beside Ollama and vLLM, found on their default
+  ports and using the model loaded (`auto`); `TR1_OLLAMA_MODEL=auto` takes the first model pulled.
+- `trading-r1 models`: every provider, whether it is set up and answering, and the fix when not.
+- The model picker explains a sign-in (ChatGPT) instead of asking for a key.
+
 ## [0.1.0] (2026-11-04)
 
 First official release of Trading-R1, the terminal for financial research and analysis by
